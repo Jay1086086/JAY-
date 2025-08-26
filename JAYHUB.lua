@@ -262,7 +262,7 @@ end
     end
 })
 
-Tab:Button({
+    InkGameTab:Button({
     Title = "飞行脚本",
     Description = "从GitHub加载并执行飞行脚本",
     Callback = function()
