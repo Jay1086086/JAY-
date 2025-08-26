@@ -127,6 +127,86 @@ end
     end
 })
 
+credits:Button({
+    Title = "透视",
+    Desc = "单击开启玩家透视",
+    Callback = function()
+        local Players = game:GetService("Players")
+        local RunService = game:GetService("RunService")
+        local LocalPlayer = Players.LocalPlayer
+
+        local highlightTemplate = Instance.new("Highlight")
+        highlightTemplate.Name = "PlayerHighlight"
+        highlightTemplate.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        highlightTemplate.FillColor = Color3.new(1, 0, 0)
+        highlightTemplate.OutlineColor = Color3.new(1, 1, 1)
+        highlightTemplate.FillTransparency = 0.5
+
+        local function addHighlightToPlayer(player)
+            local character = player.Character
+            local characterLoaded = player.CharacterAdded:Wait(5)
+            character = character or characterLoaded
+            if not character then return warn("玩家" .. player.Name .. "角色加载超时，无法添加透视") end
+
+            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+            if not humanoidRootPart then return warn("玩家" .. player.Name .. "角色缺少 HumanoidRootPart") end
+
+            if not humanoidRootPart:FindFirstChild(highlightTemplate.Name) then
+                local highlightClone = highlightTemplate:Clone()
+                highlightClone.Adornee = character
+                highlightClone.Parent = humanoidRootPart
+            end
+        end
+
+        for _, player in pairs(Players:GetPlayers()) do
+            if player ~= LocalPlayer then
+                addHighlightToPlayer(player)
+            end
+        end
+
+        Players.PlayerAdded:Connect(function(newPlayer)
+            if newPlayer ~= LocalPlayer then
+                addHighlightToPlayer(newPlayer)
+            end
+        end)
+
+        Players.PlayerAdded:Connect(function(player)
+            if player ~= LocalPlayer then
+                player.CharacterAdded:Connect(function(newCharacter)
+                    addHighlightToPlayer(player)
+                end)
+            end
+        end)
+
+        Players.PlayerRemoving:Connect(function(leavingPlayer)
+            local character = leavingPlayer.Character
+            if character then
+                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
+                if humanoidRootPart then
+                    local highlight = humanoidRootPart:FindFirstChild(highlightTemplate.Name)
+                    if highlight then highlight:Destroy() end
+                end
+            end
+        end)
+
+        -- 7. 轻量化心跳检测：仅修复偶尔丢失的透视（原代码重复添加，优化为1秒检测一次）
+        local lastCheckTime = os.clock()
+        RunService.Heartbeat:Connect(function()
+            -- 控制检测频率：1秒一次，避免频繁循环消耗性能
+            if os.clock() - lastCheckTime >= 1 then
+                for _, player in pairs(Players:GetPlayers()) do
+                    if player ~= LocalPlayer then
+                        addHighlightToPlayer(player)
+                    end
+                end
+                lastCheckTime = os.clock()
+            end
+        end)
+
+        print("透视功能已开启，所有玩家将显示高亮")
+    end
+})
+
 -- Another Tab Example
 local InkGameTab = Window:Tab({Title = "墨水游戏", Icon = "skull"})do
     InkGameTab:Section({Title = "英文防封", Icon = "wrench"})
