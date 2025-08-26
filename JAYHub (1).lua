@@ -128,7 +128,7 @@ end
 })
 
 -- Another Tab Example
-local InkGameTab = Window:Tab({Title = "墨水游戏", Icon = "wrench"})do
+local InkGameTab = Window:Tab({Title = "墨水游戏", Icon = "skull"})do
     InkGameTab:Section({Title = "英文防封", Icon = "wrench"})
     InkGameTab:Button({
         Title = "AX",
@@ -155,7 +155,7 @@ InkGameTab:Button({
         loadstring(game:HttpGet("https://raw.githubusercontent.com/Xingtaiduan/Script/refs/heads/main/Games/墨水游戏.lua"))()
     end
 })
-local Extra = Window:Tab({Title = "死铁轨", Icon = "zombie"})do
+local Extra = Window:Tab({Title = "死铁轨", Icon = "knife"})do
     Extra:Section({Title = "英文"})
     Extra:Button({
         Title = "JAY",
