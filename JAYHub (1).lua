@@ -131,79 +131,134 @@ end
     Title = "透视",
     Desc = "单击开启玩家透视",
     Callback = function()
-        local Players = game:GetService("Players")
+       local Players = game:GetService("Players")
         local RunService = game:GetService("RunService")
-        local LocalPlayer = Players.LocalPlayer
+        
+        local highlight = Instance.new("Highlight")
+        highlight.Name = "Highlight"
+        highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop -- 保证透视高亮始终可见
 
-        local highlightTemplate = Instance.new("Highlight")
-        highlightTemplate.Name = "PlayerHighlight"
-        highlightTemplate.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-        highlightTemplate.FillColor = Color3.new(1, 0, 0)
-        highlightTemplate.OutlineColor = Color3.new(1, 1, 1)
-        highlightTemplate.FillTransparency = 0.5
+        -- 为已有玩家添加透视和小尺寸名字
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= game.Players.LocalPlayer then
+                repeat task.wait() until player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+                local humanoidRootPart = player.Character.HumanoidRootPart
+                
+                -- 添加/维护透视高亮
+                if not humanoidRootPart:FindFirstChild("Highlight") then
+                    local highlightClone = highlight:Clone()
+                    highlightClone.Adornee = player.Character
+                    highlightClone.Parent = humanoidRootPart
+                end
 
-        local function addHighlightToPlayer(player)
-            local character = player.Character
-            local characterLoaded = player.CharacterAdded:Wait(5)
-            character = character or characterLoaded
-            if not character then return warn("玩家" .. player.Name .. "角色加载超时，无法添加透视") end
+                if not humanoidRootPart:FindFirstChild("PlayerNameDisplay") then
+                    local billboardGui = Instance.new("BillboardGui")
+                    billboardGui.Name = "PlayerNameDisplay"
+                    billboardGui.Adornee = humanoidRootPart
+                    billboardGui.Size = UDim2.new(0, 150, 0, 20)
+                    billboardGui.StudsOffset = Vector3.new(0, 2.8, 0)
+                    billboardGui.AlwaysOnTop = true
 
-            local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-            if not humanoidRootPart then return warn("玩家" .. player.Name .. "角色缺少 HumanoidRootPart") end
+                    local textLabel = Instance.new("TextLabel")
+                    textLabel.Parent = billboardGui
+                    textLabel.Size = UDim2.new(1, 0, 1, 0)
+                    textLabel.BackgroundTransparency = 1
+                    textLabel.Text = player.Name
+                    textLabel.TextColor3 = Color3.new(1, 1, 1)
+                    textLabel.TextSize = 9
+                    textLabel.TextScaled = false
 
-            if not humanoidRootPart:FindFirstChild(highlightTemplate.Name) then
-                local highlightClone = highlightTemplate:Clone()
-                highlightClone.Adornee = character
-                highlightClone.Parent = humanoidRootPart
+                    billboardGui.Parent = humanoidRootPart
+                end
             end
         end
 
-        for _, player in pairs(Players:GetPlayers()) do
-            if player ~= LocalPlayer then
-                addHighlightToPlayer(player)
-            end
-        end
+        -- 新玩家加入时添加透视和名字
+        game.Players.PlayerAdded:Connect(function(player)
+            player.CharacterAdded:Connect(function(character)
+                repeat task.wait() until character:FindFirstChild("HumanoidRootPart")
+                local humanoidRootPart = character.HumanoidRootPart
+                
+                -- 透视高亮
+                if not humanoidRootPart:FindFirstChild("Highlight") then
+                    local highlightClone = highlight:Clone()
+                    highlightClone.Adornee = character
+                    highlightClone.Parent = humanoidRootPart
+                end
 
-        Players.PlayerAdded:Connect(function(newPlayer)
-            if newPlayer ~= LocalPlayer then
-                addHighlightToPlayer(newPlayer)
-            end
+                -- 小尺寸名字
+                local billboardGui = Instance.new("BillboardGui")
+                billboardGui.Name = "PlayerNameDisplay"
+                billboardGui.Adornee = humanoidRootPart
+                billboardGui.Size = UDim2.new(0, 150, 0, 20)
+                billboardGui.StudsOffset = Vector3.new(0, 2.8, 0)
+                billboardGui.AlwaysOnTop = true
+
+                local textLabel = Instance.new("TextLabel")
+                textLabel.Parent = billboardGui
+                textLabel.Size = UDim2.new(1, 0, 1, 0)
+                textLabel.BackgroundTransparency = 1
+                textLabel.Text = player.Name
+                textLabel.TextColor3 = Color3.new(1, 1, 1)
+                textLabel.TextSize = 9 -- 名字缩小到9
+                textLabel.TextScaled = false
+
+                billboardGui.Parent = humanoidRootPart
+            end)
         end)
 
-        Players.PlayerAdded:Connect(function(player)
-            if player ~= LocalPlayer then
-                player.CharacterAdded:Connect(function(newCharacter)
-                    addHighlightToPlayer(player)
-                end)
-            end
-        end)
-
-        Players.PlayerRemoving:Connect(function(leavingPlayer)
-            local character = leavingPlayer.Character
-            if character then
-                local humanoidRootPart = character:FindFirstChild("HumanoidRootPart")
-                if humanoidRootPart then
-                    local highlight = humanoidRootPart:FindFirstChild(highlightTemplate.Name)
-                    if highlight then highlight:Destroy() end
+        -- 玩家离开时清理资源
+        game.Players.PlayerRemoving:Connect(function(player)
+            if player.Character and player.Character:FindFirstChild("HumanoidRootPart") then
+                local humanoidRootPart = player.Character.HumanoidRootPart
+                if humanoidRootPart:FindFirstChild("Highlight") then
+                    humanoidRootPart.Highlight:Destroy()
+                end
+                if humanoidRootPart:FindFirstChild("PlayerNameDisplay") then
+                    humanoidRootPart.PlayerNameDisplay:Destroy()
                 end
             end
         end)
 
-        -- 7. 轻量化心跳检测：仅修复偶尔丢失的透视（原代码重复添加，优化为1秒检测一次）
-        local lastCheckTime = os.clock()
+        -- 每帧维护透视和名字显示
         RunService.Heartbeat:Connect(function()
-            -- 控制检测频率：1秒一次，避免频繁循环消耗性能
-            if os.clock() - lastCheckTime >= 1 then
-                for _, player in pairs(Players:GetPlayers()) do
-                    if player ~= LocalPlayer then
-                        addHighlightToPlayer(player)
+            for _, player in ipairs(Players:GetPlayers()) do
+                if player ~= game.Players.LocalPlayer and player.Character then
+                    local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+                    if humanoidRootPart then
+                        -- 维护透视
+                        if not humanoidRootPart:FindFirstChild("Highlight") then
+                            local highlightClone = highlight:Clone()
+                            highlightClone.Adornee = player.Character
+                            highlightClone.Parent = humanoidRootPart
+                            task.wait()
+                        end
+
+                        -- 维护小尺寸名字
+                        if not humanoidRootPart:FindFirstChild("PlayerNameDisplay") then
+                            local billboardGui = Instance.new("BillboardGui")
+                            billboardGui.Name = "PlayerNameDisplay"
+                            billboardGui.Adornee = humanoidRootPart
+                            billboardGui.Size = UDim2.new(0, 150, 0, 20)
+                            billboardGui.StudsOffset = Vector3.new(0, 2.8, 0)
+                            billboardGui.AlwaysOnTop = true
+
+                            local textLabel = Instance.new("TextLabel")
+                            textLabel.Parent = billboardGui
+                            textLabel.Size = UDim2.new(1, 0, 1, 0)
+                            textLabel.BackgroundTransparency = 1
+                            textLabel.Text = player.Name
+                            textLabel.TextColor3 = Color3.new(1, 1, 1)
+                            textLabel.TextSize = 9 -- 名字缩小到9
+                            textLabel.TextScaled = false
+
+                            billboardGui.Parent = humanoidRootPart
+                            task.wait()
+                        end
                     end
                 end
-                lastCheckTime = os.clock()
             end
         end)
-
-        print("透视功能已开启，所有玩家将显示高亮")
     end
 })
 
