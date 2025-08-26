@@ -266,7 +266,25 @@ end
         Title = "飞行V3",
         Desc = "单击以执行",
         Callback = function()
-            loadstring(game:HttpGet("https://raw.githubusercontent.com/Jay907692/Jay/8b94c47bd5969608438fa1ee57f34b1350789caa/飞行脚本", true))()
+            -- 修正：HttpGet 第二个参数为 "nocache"（布尔值，控制是否缓存），原代码 "true" 写法不规范（虽可运行，但明确参数含义更严谨）
+            -- 注意：需确保飞行脚本链接有效，且仓库为公开访问
+            local flyScriptUrl = "https://raw.githubusercontent.com/Jay907692/Jay/8b94c47bd5969608438fa1ee57f34b1350789caa/飞行脚本"
+            
+            -- 新增：添加 pcall 错误处理，避免链接失效/加载失败导致整个 UI 崩溃
+            local success, err = pcall(function()
+                local flyScriptContent = game:HttpGet(flyScriptUrl, false) -- false = 允许缓存（提升加载速度），true = 禁止缓存（强制获取最新版）
+                loadstring(flyScriptContent)()
+                print("飞行V3脚本加载成功")
+            end)
+            
+            -- 错误提示：加载失败时输出原因，便于排查问题
+            if not success then
+                warn("飞行V3脚本加载失败：", err)
+                -- 可选：若 Window:Notify 方法存在，添加游戏内弹窗提示（与 UI 框架保持一致）
+                -- if Window then
+                --     Window:Notify({Title = "错误", Desc = "飞行脚本加载失败：" .. err, Time = 3})
+                -- end
+            end
         end
     })
 end
