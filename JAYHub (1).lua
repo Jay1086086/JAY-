@@ -127,7 +127,7 @@ end
     end
 })
 
-credits:Button({
+    InkGameTab:Button({
     Title = "透视",
     Desc = "单击开启玩家透视",
     Callback = function()
