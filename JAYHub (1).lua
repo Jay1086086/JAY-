@@ -267,8 +267,6 @@ end
         Desc = "单击以执行",
         Callback = function()
             loadstring(game:HttpGet("https://raw.githubusercontent.com/Jay907692/Jay/8b94c47bd5969608438fa1ee57f34b1350789caa/飞行脚本", true))()
-            
-            end
         end
     })
 end
