@@ -102,8 +102,6 @@ do
     })
 end
 
-    local Players = game:GetService("Players")
-local localPlayer = Players.LocalPlayer
     InkGameTab:Slider({
         Title = "跳跃高度",
         Min = 0,
