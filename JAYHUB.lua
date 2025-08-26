@@ -272,6 +272,65 @@ end
     end
 })
 
+    InkGameTab:Toggle({
+    Title = "穿墙",
+    Flag = "NoClip", -- 用于标识该 Toggle 的状态，需确保 UI 库支持 Flag 参数
+    Default = false,
+    Callback = function(NC)
+        -- 定义全局变量（或在合适作用域）存储连接和状态，避免多次触发重复创建
+        if not _G.Stepped then
+            _G.Stepped = nil
+        end
+        if not _G.Clipon then
+            _G.Clipon = false
+        end
+        
+        local Workspace = game:GetService("Workspace")
+        local Players = game:GetService("Players")
+        local LocalPlayer = Players.LocalPlayer
+        
+        if NC then
+            _G.Clipon = true
+            -- 如果之前有连接，先断开，避免重复
+            if _G.Stepped then
+                _G.Stepped:Disconnect()
+            end
+            _G.Stepped = game:GetService("RunService").Stepped:Connect(function()
+                if _G.Clipon then
+                    local character = LocalPlayer.Character
+                    if character then
+                        for _, v in pairs(character:GetChildren()) do
+                            if v:IsA("BasePart") then
+                                v.CanCollide = false
+                            end
+                        end
+                    end
+                else
+                    if _G.Stepped then
+                        _G.Stepped:Disconnect()
+                        _G.Stepped = nil
+                    end
+                end
+            end)
+        else
+            _G.Clipon = false
+            -- 断开连接，恢复碰撞
+            if _G.Stepped then
+                _G.Stepped:Disconnect()
+                _G.Stepped = nil
+            end
+            local character = LocalPlayer.Character
+            if character then
+                for _, v in pairs(character:GetChildren()) do
+                    if v:IsA("BasePart") then
+                        v.CanCollide = true
+                    end
+                end
+            end
+        end
+    end
+})
+
 -- Another Tab Example
 local InkGameTab = Window:Tab({Title = "墨水游戏", Icon = "skull"})do
     InkGameTab:Section({Title = "英文防封", Icon = "wrench"})
