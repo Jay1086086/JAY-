@@ -102,6 +102,41 @@ do
     })
 end
 
+    local Players = game:GetService("Players")
+local localPlayer = Players.LocalPlayer
+    InkGameTab:Slider({
+        Title = "跳跃高度",
+        Min = 0,
+        Max = 200,
+        Rounding = 1,
+        Value = 30,
+        Callback = function(jumpPower)
+            local function setJumpPower(power)
+                local character = localPlayer.Character
+                if not character then return end
+                local humanoid = character:FindFirstChildOfClass("Humanoid")
+                if humanoid then
+                    humanoid.JumpPower = power
+                    print("跳跃高度已设置为:", power)
+                end
+            end
+            
+            setJumpPower(jumpPower)
+               
+            local characterAddedConn
+            characterAddedConn = localPlayer.CharacterAdded:Connect(function(newCharacter)
+                newCharacter:WaitForChild("Humanoid")
+                setJumpPower(jumpPower)
+            end)
+        end
+    })
+end
+
+localPlayer.CharacterAdded:Connect(function(character)
+    local humanoid = character:WaitForChild("Humanoid")
+    humanoid.JumpPower = 30
+end)
+
 -- Another Tab Example
 local InkGameTab = Window:Tab({Title = "墨水游戏", Icon = "wrench"})do
     InkGameTab:Section({Title = "英文防封", Icon = "wrench"})
